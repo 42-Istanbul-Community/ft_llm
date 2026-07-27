@@ -11,3 +11,10 @@ else:
     print("Ready to roll!")
 
 
+from modules.llm import BasicLLM
+from helpers.utils import get_jinja2
+
+
+client = openai.OpenAI()
+llm = BasicLLM(client)
+llm.respond("Hey")
