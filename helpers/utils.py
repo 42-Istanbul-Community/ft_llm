@@ -2,16 +2,13 @@ import random
 import string
 import datetime
 import time
-
+from os import walk
+from os.path import join
 from jinja2 import Environment, FileSystemLoader
 
 
-def get_jinja2(**kwargs):
+def get_jinja2(path="personas", name="empty", **kwargs):
     try:
-        # assert hasattr(kwargs,"ENVIRONMENT"),"ENVIRONMENT parameter missing."
-        path = kwargs["ENVIRONMENT"]
-        name = kwargs["ENTITY"]
-        # assert hasattr(kwargs,"ENTITY"),"ENTITY parameter missing."
         env = Environment(loader=FileSystemLoader(path))
         template = env.get_template(f'{name}.j2')
         system_message = template.render(**kwargs)
@@ -42,32 +39,25 @@ def get_timestamp():
     return int(time.time()*1000)
 
 
-def get_system_message(name=None, folder=None, extension=".txt"):
-    system_message = ""
-    folders = ["personas", "institude"]
-    if not name:
-        name = "empty"
-    if not folder:
-        folder = ["", "optional_roles", "unused"]
-    else:
-        folder = [folder] if not isinstance(folder, list) else folder
-    for fold in folder:
-        # file_name = "./personas",folder,name+".txt"
-        for folde in folders:
-            # file_name = join(f"./{folde}",fold,name+extension)
-            # print(f"Seeking: {file_name}")
-            for ext in [".txt", ".md", ".j2"]:
-                try:
-                    system_message = get_context(f"./{folde}/"+fold, name+ext)
-                    # print(system_message)
-                    if not system_message:
-                        raise ValueError
-                    # with open(file_name,"/f.read()
-                except Exception as e:
-                    pass
-                else:
-                    # print(f"./{folde}/"+fold,name+ext)
-                    return system_message
+def get_context(folder="", name=""):
+    context = ""
+    file_name = join(folder, name)
+    try:
+        with open(file_name, "r", encoding="utf8") as f:
+            context = f.read()
+    except Exception:
+        pass
+    finally:
+        return context
+
+
+def get_system_message(name="empty", folder="personas", extension=".txt"):
+    try:
+        system_message = get_context(f"{folder}", name+extension)
+        if not system_message:
+            raise ValueError
+    except Exception:
+        pass
     return system_message
 
 
