@@ -161,11 +161,13 @@ class BasicLLM(BaseLLM, LLMUtils):
         #                     now.hour: 02d}: {
         #                         (math.ceil(int(now.minute) / 15) * 15) % 60: 02d} - {
         #                             now.strftime('%A')}"
+
         kwargs["date"] = f"{
             now.strftime('%B')} {
                 now.day}{
                     get_ordinal_suffix(int(now.day))}, {
                         now.year}"
+
         kwargs["date_t"] = f"{
             now.strftime('%B')} {
                 now.day}{
@@ -174,6 +176,7 @@ class BasicLLM(BaseLLM, LLMUtils):
                             now.hour % 12: 02d} {
                                 'PM' if now.hour > 12 else 'AM'}, {
                                     now.strftime('%A')}"
+
         kwargs["date_p"] = f"{
             now.strftime('%B')} {
                 now.day}{
@@ -182,10 +185,12 @@ class BasicLLM(BaseLLM, LLMUtils):
                             now.hour: 02d}: {
                                 now.minute: 02d}, {
                                     now.strftime('%A')}"
+
         kwargs["time"] = f"{
             now.hour % 12: 02d} {
                 'PM' if now.hour > 12 else 'AM'}, {
                     now.strftime('%A')}"
+
         kwargs["time_p"] = f"{
             now.hour: 02d}: {
                 now.minute: 02d}"
