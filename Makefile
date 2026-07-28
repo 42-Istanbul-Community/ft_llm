@@ -1,4 +1,10 @@
 VENV=.venv
+PIP=./.venv/bin/pip
+PYTHON=./.venv/bin/python3
+RM=rm
+RM_FLAG=-rf
+RM_RF=$(RM) $(RM_FLAG)
+THIS_FILE := $(lastword $(MAKEFILE_LIST))
 
 lint:
 	flake8 .  --exclude .git,__pycache__,venv,.venv
@@ -10,25 +16,30 @@ lint:
 # 	autopep8 $(git ls-files '*.py') --in-place
 # 	$ find . -name '*.py' -exec autopep8 --in-place '{}' \;
 
+update:
+	@$(PIP) install --upgrade pip
+
 install: requirements.txt
 	@if [ ! -d "$(VENV)" ]; then echo "Creating virtual environment..."; python3 -m venv $(VENV); fi
 	@echo "Environment active, installing dependencies from requirements.txt";
-	@./.venv/bin/pip install -r requirements.txt --quiet
+	@$(MAKE) -f $(THIS_FILE) update
+	@$(PIP) install -r requirements.txt --quiet
 	@echo Dependencies installed!
 
 run: install
-	@./.venv/bin/python3 main.py
+	clear
+	@$(PYTHON) main.py
 
 clean:
-	@rm -rf __pycache__ .mypy_cache .pytest_cache
-	@rm -rf modules/__pycache__ utils/__pycache__
-	@rm -rf *.egg-info dist build
-	@rm -rf .vscode/
+	@$(RM_RF) __pycache__ .mypy_cache .pytest_cache
+	@$(RM_RF) modules/__pycache__ utils/__pycache__
+	@$(RM_RF) *.egg-info dist build
+	@$(RM_RF) .vscode/
 	@find . -name "*.pyc" -delete
 	@find . -name "__pycache__" -type d -delete
 	@echo "Project cleaned..."
 
 fclean: clean
-	@rm -rf .venv/
+	@$(RM_RF) .venv/
 
-.PHONY: lint create activate install run clean fclean
+.PHONY: lint update install run clean fclean

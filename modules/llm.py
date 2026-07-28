@@ -1,13 +1,14 @@
 import json
 import datetime
 from openai._types import NOT_GIVEN
-from constants.config import default_config
+from constants import full_config
+from helpers import get_system_message
 
 
 class BaseLLM:
     def __init__(self, client, config={}, data={}) -> None:
         self.openai = client
-        self.config = config if not config == {} else default_config
+        self.config = config if not config == {} else full_config
         self.data = data
 
     def chat_completion(self, messages=[], **kwargs):
@@ -47,13 +48,15 @@ class BaseLLM:
                                 print(reason, end="", flush=True)
                                 reasoning += reason
                             token = chunk.choices[0].delta.content
-                            if token is not None:
+                            if token != '':
                                 if thinking:
                                     thinking = False
                                     print("\n\nResponse:\n")
+                                    # yield "\n\nResponse:\n"
                                 print(token, end="", flush=True)
                                 response += token
                 print()
+
                 return response.strip()
 
             else:
@@ -114,9 +117,6 @@ class BasicLLM(BaseLLM, LLMUtils):
 
         elif len(self.messages) > 0 and self.messages[-1]['role'] == role:
             if name:
-                # if 'name' in self.messages[-1] and self.messages[-1]['name'] == name:
-                #     self.messages[-1]['content'] += f"\n\n{content}"
-                #     return
                 self.messages.append(
                     dict(role=role, name=name, content=content))
                 return
@@ -125,13 +125,17 @@ class BasicLLM(BaseLLM, LLMUtils):
 
     def respond(self, **kwargs):
         response_format = kwargs.get("response_format", NOT_GIVEN)
+
         if response_format in globals():
             kwargs["response_format"] = globals()[response_format]
 
         response = self.generate(**kwargs).strip()
 
-        self.append_message(role='assistant', content=response,
-                            name=self.config.get("name"))
+        self.append_message(
+            role='assistant',
+            content=response,
+            name=self.config.get("name"))
+
         return response
 
     def responding(self, message=None, name=None, response_format=NOT_GIVEN):
@@ -143,7 +147,10 @@ class BasicLLM(BaseLLM, LLMUtils):
 
     def inject_variables(self, message, name):
         def get_ordinal_suffix(day: int) -> str:
-            return {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th') if day not in (11, 12, 13) else 'th'
+            return {
+                1: 'st', 2: 'nd', 3: 'rd'}.get(
+                    day % 10, 'th') if day not in (
+                        11, 12, 13) else 'th'
         kwargs = {}
         now = datetime.datetime.now()
         # kwargs["date_r"] = f"{
@@ -187,34 +194,31 @@ class BasicLLM(BaseLLM, LLMUtils):
         return message.format(**self.config)
 
     def refresh_system(self, rules=None, hijack=None, insert=False):
-        # self.messages = [msg for msg in self.messages if msg["role"] != "system"]
         if len(self.messages) > 1 and self.messages[0]["role"] == "system":
             self.messages = self.messages[1:]
+
         system_message = self.config.get("system_message")
-        if system_message == "" or system_message == None:
+
+        if system_message == "" or system_message is None:
             system_message = get_system_message(self.config.get("name"))
+
         for msg in self.messages:
             msg["content"] = self.inject_variables(
                 msg['content'], self.config.get('name'))
-        if system_message != None:
+
+        if system_message is not None:
             system_message = self.inject_variables(
                 system_message, self.config.get("name"))
-        rules_string = self.build_rules(rules)
-        if rules_string and not rules_string == "":
-            system_message += "\n" + rules_string
+
         if system_message and not system_message == "":
             self.messages.insert(
                 0, dict(role="system", content=system_message))
-        if hijack and not hijack == "":
-            if insert:
-                self.messages.insert(0, dict(role="system", content=hijack))
-            else:
-                self.messages.insert(len(self.messages), dict(
-                    role="system", content=hijack))
 
     def align_messages(self):
-        self.messages = [msg for msg in self.messages if (
-            "content" in msg and msg['content'] != "") or "tool_calls" in msg or msg["role"] == "tool"]
+        self.messages = [
+            msg for msg in self.messages
+            if ("content" in msg and msg['content'] != "")]
+
         if len(self.messages) > 1 and self.messages[0]["role"] == "system":
             while self.messages[1]["role"] == "assistant":
                 self.messages.pop(1)
@@ -222,9 +226,12 @@ class BasicLLM(BaseLLM, LLMUtils):
     def generate(self, message=None, name=None, **kwargs):
         if message:
             self.append_message("user", message, name)
+
         self.config.update(kwargs)
         self.refresh_system()
+
         messages = kwargs.get("messages")
+
         if messages or messages == []:
             messages.append(
                 {
@@ -236,10 +243,8 @@ class BasicLLM(BaseLLM, LLMUtils):
                 }
             )
             return self.chat_completion(**kwargs)
-        # print("éHETER")
         return self.chat_completion(self.messages, **kwargs)
 
     def change_model(self, model):
         self.config["model"] = model
-        # self.worker.config["model"] = model
         return f"Model changed to {model}."

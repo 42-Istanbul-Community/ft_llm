@@ -27,9 +27,11 @@ def load_env(file_path=".env"):
 def get_context(folder="", name=""):
     context = ""
     file_name = os.path.join(folder, name)
+    print(file_name)
     try:
         with open(file_name, "r", encoding="utf8") as f:
             context = f.read()
+        print(context)
     except Exception as e:
         print(f"get_context Error: {e}")
     finally:
@@ -38,11 +40,13 @@ def get_context(folder="", name=""):
 
 def get_system_message(name="empty", folder="personas", extension=".txt"):
     try:
-        system_message = get_context(f"{folder}", name+extension)
+        system_message = get_context(
+            folder=folder,
+            name=f"{name}{extension}")
         if not system_message:
             raise ValueError
     except Exception as e:
-        print(f"get_system_message Error: {e}")
+        print("get_system_message Error:", e)
     return system_message
 
 

@@ -15,7 +15,7 @@ make install
 
 ## Usage
 ```bash 
-make run # creates virtual environment (.venv) and installs dependencies if not necessary.
+make run # creates virtual environment (.venv) and installs dependencies if necessary.
 ```
 
 ## Contributing Guidelines 🤝  
