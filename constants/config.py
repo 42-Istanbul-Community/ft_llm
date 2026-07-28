@@ -12,3 +12,6 @@ full_config = {
     "top_k": 40,
     "min_p": 0.5
 }
+
+OLLAMA_ENDPOINT = "http://127.0.0.1:1234/v1/models/"
+LMSTUDIO_ENDPOINT = "http://127.0.0.1:11434/v1/models/"

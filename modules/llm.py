@@ -1,10 +1,6 @@
 import json
 import datetime
-from os import listdir
-from os.path import isfile, join
 from openai._types import NOT_GIVEN
-from jinja2 import Template
-import requests
 from constants.config import default_config
 
 
@@ -42,8 +38,8 @@ class BaseLLM:
                     if chunk:
                         if not chunk.choices[0].finish_reason:
                             reason = None
-                            if hasattr(chunk.choices[0].delta, "reasoning_content"):
-                                reason = chunk.choices[0].delta.reasoning_content
+                            if hasattr(chunk.choices[0].delta, "reasoning"):
+                                reason = chunk.choices[0].delta.reasoning
                             if reason is not None:
                                 if not thinking:
                                     thinking = True
@@ -94,10 +90,6 @@ class LLMUtils:
     def cfp(self, value):
         self.config['frequency_penalty'] = float(value)
         return self.config
-
-    def get_models(self):
-        req = requests.get("http://127.0.0.1:1234/v1/models/")
-        return [item['id'] for item in req.json()["data"]]
 
 
 class BasicLLM(BaseLLM, LLMUtils):
@@ -154,25 +146,45 @@ class BasicLLM(BaseLLM, LLMUtils):
             return {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th') if day not in (11, 12, 13) else 'th'
         kwargs = {}
         now = datetime.datetime.now()
-        files = [f for f in listdir("./dynamics")
-                 if isfile(join("./dynamics", f))]
-        for f in files:
-            title = f.split(".j2")[0]
-            if name in title:
-                with open("./dynamics/"+f, "r") as file:
-                    kwargs.update(
-                        {title.replace(name+"_", "").replace(".txt", ""): file.read()})
-        # kwargs = {k.replace(name+"_",""):v for k,v in zip([x.split(".")[0] for x in files],[open("./dynamics/"+file).read() for file in files]) if name in k}
-        # kwargs["date_p"]= f"{now.strftime('%B')} {now.day}{get_ordinal_suffix(int(now.day))}, {now.year} - {now.hour:02d}:{(math.ceil(int(now.minute) / 15) * 15) % 60:02d} - {now.strftime('%A')}"
-        kwargs["date"] = f"{now.strftime('%B')} {now.day}{get_ordinal_suffix(int(now.day))}, {now.year}"
-        kwargs["date_t"] = f"{now.strftime('%B')} {now.day}{get_ordinal_suffix(int(now.day))}, {now.year} - {now.hour % 12:02d} {'PM' if now.hour > 12 else 'AM'}, {now.strftime('%A')}"
-        kwargs["date_p"] = f"{now.strftime('%B')} {now.day}{get_ordinal_suffix(int(now.day))}, {now.year} - {now.hour:02d}:{now.minute:02d}, {now.strftime('%A')}"
-        kwargs[
-            "time"] = f"{now.hour % 12:02d} {'PM' if now.hour > 12 else 'AM'}, {now.strftime('%A')}"
-        kwargs["time_p"] = f"{now.hour:02d}:{now.minute:02d}"
+        # kwargs["date_r"] = f"{
+        #     now.strftime('%B')} {
+        #         now.day}{
+        #             get_ordinal_suffix(int(now.day))}, {
+        #                 now.year} - {
+        #                     now.hour: 02d}: {
+        #                         (math.ceil(int(now.minute) / 15) * 15) % 60: 02d} - {
+        #                             now.strftime('%A')}"
+        kwargs["date"] = f"{
+            now.strftime('%B')} {
+                now.day}{
+                    get_ordinal_suffix(int(now.day))}, {
+                        now.year}"
+        kwargs["date_t"] = f"{
+            now.strftime('%B')} {
+                now.day}{
+                    get_ordinal_suffix(int(now.day))}, {
+                        now.year} - {
+                            now.hour % 12: 02d} {
+                                'PM' if now.hour > 12 else 'AM'}, {
+                                    now.strftime('%A')}"
+        kwargs["date_p"] = f"{
+            now.strftime('%B')} {
+                now.day}{
+                    get_ordinal_suffix(int(now.day))}, {
+                        now.year} - {
+                            now.hour: 02d}: {
+                                now.minute: 02d}, {
+                                    now.strftime('%A')}"
+        kwargs["time"] = f"{
+            now.hour % 12: 02d} {
+                'PM' if now.hour > 12 else 'AM'}, {
+                    now.strftime('%A')}"
+        kwargs["time_p"] = f"{
+            now.hour: 02d}: {
+                now.minute: 02d}"
 
         self.config.update(kwargs)
-        return Template(message).render(**self.config)
+        return message.format(**self.config)
 
     def refresh_system(self, rules=None, hijack=None, insert=False):
         # self.messages = [msg for msg in self.messages if msg["role"] != "system"]
