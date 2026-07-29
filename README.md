@@ -5,16 +5,18 @@ _A growing repository for local LLM inference with minimal dependencies maintain
 **Purpose:** Minimal codebase demonstrating how to interact with local Large Language Models using Ollama and the OpenAI API. Designed for collaborative learning by students at **School 42**. This project intentionally keeps dependencies low so new contributors can run it on any machine or container without complex setup.
 
 ## Prerequisites
-A Linux environment (Ubuntu) — typical of our labs
+1. A Linux environment (Ubuntu) — typical of our labs
+2. python >= 3.13.5
 
 ### Install Dependencies
 ```bash 
-pip install -r requirements.txt
+make install
 ```
 
 ## Usage
-
-_[Coming soon]_
+```bash 
+make run # creates virtual environment (.venv) and installs dependencies if necessary.
+```
 
 ## Contributing Guidelines 🤝  
 
