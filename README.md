@@ -28,7 +28,6 @@ make run # creates virtual environment (.venv) and installs dependencies if nece
 - `/load <string>`: Loads a previously saved conversation
 - `/rev <int>`: Reverts 'x' messages back
 
-
 ## Contributing Guidelines 🤝  
 
 This project lives at School 42, where peer-to-peer teaching and code sharing are core values. Before contributing:
