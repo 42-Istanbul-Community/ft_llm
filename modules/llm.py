@@ -1,15 +1,16 @@
 import json
 import datetime
+import re
+import os
 from openai._types import NOT_GIVEN
 from constants import full_config
 from helpers import get_system_message
 
 
 class BaseLLM:
-    def __init__(self, client, config={}, data={}) -> None:
+    def __init__(self, client, config={}, **kwargs) -> None:
         self.openai = client
         self.config = config if not config == {} else full_config
-        self.data = data
 
     def chat_completion(self, messages=[], **kwargs):
         response_format = self.config.get(
@@ -29,9 +30,12 @@ class BaseLLM:
             )
             completion = self.openai.chat.completions.create(**dicto)
         except Exception as e:
-            print("chat completion", e)
+            print("chat completion:", e)
         else:
             if self.config.get("stream"):
+                reasoning_attr = "reasoning"
+                if os.environ["PROVIDER"] == "lmstudio":
+                    reasoning_attr = "reasoning_content"
                 response = ""
                 reasoning = ""
                 thinking = False
@@ -39,8 +43,10 @@ class BaseLLM:
                     if chunk:
                         if not chunk.choices[0].finish_reason:
                             reason = None
-                            if hasattr(chunk.choices[0].delta, "reasoning"):
-                                reason = chunk.choices[0].delta.reasoning
+                            if hasattr(
+                                    chunk.choices[0].delta, reasoning_attr):
+                                reason = getattr(
+                                    chunk.choices[0].delta, reasoning_attr)
                             if reason is not None:
                                 if not thinking:
                                     thinking = True
@@ -48,17 +54,14 @@ class BaseLLM:
                                 print(reason, end="", flush=True)
                                 reasoning += reason
                             token = chunk.choices[0].delta.content
-                            if token != '':
+                            if token is not None:
                                 if thinking:
                                     thinking = False
                                     print("\n\nResponse:\n")
                                     # yield "\n\nResponse:\n"
                                 print(token, end="", flush=True)
                                 response += token
-                print()
-
                 return response.strip()
-
             else:
                 if "refusal" in completion.choices[0].message:
                     print("Refused!")
@@ -69,44 +72,87 @@ class BaseLLM:
 class LLMUtils:
 
     def save(self, name):
-        with open(f"./chapters/{name}.json", 'w') as f:
+        directory = f"./conversations/{name}.json"
+        with open(directory, 'w') as f:
             json.dump(self.messages, f)
-        return "Conversation saved."
+        print(f"Conversation saved to {directory}.")
 
     def load(self, name):
-        with open(f"./chapters/{name}.json", 'r') as f:
+        directory = f"./conversations/{name}.json"
+        with open(directory, 'r') as f:
             self.messages = json.loads(f.read())
-        return "Conversation loaded."
+        print(f"Conversation loaded from {directory}.")
+
+    def cm(self, model):
+        self.config["model"] = model
+        print(f"Model changed to {model}.")
+
+    def ca(self, model):
+        self.config["name"] = model
+        print(f"Persona set to {self.config["name"]}")
 
     def ct(self, value):
         self.config['temperature'] = float(value)
-        return self.config
+        print(f"Temperature set to: {self.config['temperature']}")
 
     def ctp(self, value):
         self.config['top_p'] = float(value)
-        return self.config
+        print(f"Top_p set to: {self.config['top_p']}")
 
     def cpp(self, value):
         self.config['presence_penalty'] = float(value)
-        return self.config
+        print(f"Presence penalty set to: {self.config['presence_penalty']}")
 
     def cfp(self, value):
         self.config['frequency_penalty'] = float(value)
-        return self.config
+        print(f"Frequency penalty set to: {self.config['frequency_penalty']}")
+
+    def rev(self, num=2):
+        try:
+            num = int(num)
+        except Exception as e:
+            print("rev: ", e)
+        self.messages = self.messages[:-num]
+        print(*[
+            f"{msg['role']}: {msg['content'][:40]}\n"
+            for msg in self.messages])
 
 
 class BasicLLM(BaseLLM, LLMUtils):
 
-    def __init__(self, client, config={}, data={}) -> None:
-        super().__init__(client, config, data)
-        self.messages = self.data.get("messages", [])
+    def __init__(self, client, config={}, **kwargs) -> None:
+        super().__init__(client, config, **kwargs)
+        self.messages = kwargs.get("messages", [])
         self.instructions_folder = "./personas/"
-        self.data = data
 
-    def reset(self, system_prompt=None):
-        self.messages = self.data.get("messages", [])
-        if system_prompt:
-            self.append_message("system", system_prompt, unique=True)
+    def run(self, command, **kwargs) -> str:
+        response = ""
+        if command.startswith("/"):
+            attr = command.split(" ")[0].replace("/", "")
+            args = re.findall(r'"(.*?)"', command)
+            if args == []:
+                args = command.split(" ")[1:]
+            print(attr, args)
+            try:
+                if hasattr(self, attr):
+                    response = getattr(self, attr)(*args)
+                else:
+                    print(f"Command not available: {attr}, {args}")
+            except Exception as e:
+                print("run:", e)
+                print("Command failed!")
+            else:
+                if not response:
+                    response = "Cmd ran!"
+        else:
+            return self.respond(
+                message=command.replace("\\n", "\n"),
+                **kwargs)
+        return response
+
+    def reset(self, system_prompt=None) -> None:
+        self.messages = []
+        self.refresh_system()
 
     def append_message(self, role, content, name=None, unique=None):
         if not name and role == "assistant":
@@ -123,6 +169,15 @@ class BasicLLM(BaseLLM, LLMUtils):
 
         self.messages.append(dict(role=role, content=content))
 
+        # @ TODO: CONVERT TO BELOW FORMAT
+        # {
+        #     'role': 'user',
+        #     'content': [{'text': message, 'type': 'text'}],
+        #     'metadata': None,
+        #     'options': None,
+        #     'name': name
+        # }
+
     def respond(self, **kwargs):
         response_format = kwargs.get("response_format", NOT_GIVEN)
 
@@ -136,13 +191,6 @@ class BasicLLM(BaseLLM, LLMUtils):
             content=response,
             name=self.config.get("name"))
 
-        return response
-
-    def responding(self, message=None, name=None, response_format=NOT_GIVEN):
-        response = self.stream(
-            message, name=name, response_format=response_format)
-        self.append_message(role='assistant', content=response,
-                            name=self.config.get("name"))
         return response
 
     def inject_variables(self, message, name):
@@ -196,7 +244,11 @@ class BasicLLM(BaseLLM, LLMUtils):
                 now.minute: 02d}"
 
         self.config.update(kwargs)
-        return message.format(**self.config)
+        try:
+            return message.format(**self.config)
+        except Exception as e:
+            print("Inject_variable:", e)
+            return message
 
     def refresh_system(self, rules=None, hijack=None, insert=False):
         if len(self.messages) > 1 and self.messages[0]["role"] == "system":
@@ -235,21 +287,4 @@ class BasicLLM(BaseLLM, LLMUtils):
         self.config.update(kwargs)
         self.refresh_system()
 
-        messages = kwargs.get("messages")
-
-        if messages or messages == []:
-            messages.append(
-                {
-                    'role': 'user',
-                    'content': [{'text': message, 'type': 'text'}],
-                    'metadata': None,
-                    'options': None,
-                    'name': name
-                }
-            )
-            return self.chat_completion(**kwargs)
         return self.chat_completion(self.messages, **kwargs)
-
-    def change_model(self, model):
-        self.config["model"] = model
-        return f"Model changed to {model}."
