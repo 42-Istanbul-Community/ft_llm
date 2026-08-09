@@ -18,6 +18,17 @@ make install
 make run # creates virtual environment (.venv) and installs dependencies if necessary.
 ```
 
+### Slash commands
+
+- `/ct <float>`: Change temperature
+- `/ca <string>`: Change ai(persona)
+- `/cpp <float>`: Set presence_penalty (-2 / 2)
+- `/cfp <float>`: Set frequency_penalty (-2 / 2)
+- `/save <string>`: Save the current conversation
+- `/load <string>`: Load a previously saved conversation
+- `/rev <int>`: Revert 'x' messages back
+
+
 ## Contributing Guidelines 🤝  
 
 This project lives at School 42, where peer-to-peer teaching and code sharing are core values. Before contributing:
