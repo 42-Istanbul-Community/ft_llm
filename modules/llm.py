@@ -72,16 +72,24 @@ class BaseLLM:
 class LLMUtils:
 
     def save(self, name):
-        directory = f"./conversations/{name}.json"
-        with open(directory, 'w') as f:
+        safe_name = os.path.basename(name)
+        filename = safe_name if safe_name.endswith(
+            '.json') else f"{safe_name}.json"
+        directory = os.path.join('.', 'conversations')
+        os.makedirs(directory, exist_ok=True)
+        path = os.path.join(directory, filename)
+        with open(path, 'w', encoding='utf-8') as f:
             json.dump(self.messages, f)
-        print(f"Conversation saved to {directory}.")
+        print(f"Conversation saved to {path}.")
 
     def load(self, name):
-        directory = f"./conversations/{name}.json"
-        with open(directory, 'r') as f:
-            self.messages = json.loads(f.read())
-        print(f"Conversation loaded from {directory}.")
+        safe_name = os.path.basename(name)
+        filename = safe_name if safe_name.endswith(
+            '.json') else f"{safe_name}.json"
+        path = os.path.join('.', 'conversations', filename)
+        with open(path, 'r', encoding='utf-8') as f:
+            self.messages = json.load(f)
+        print(f"Conversation loaded from {path}.")
 
     def cm(self, model):
         self.config["model"] = model
