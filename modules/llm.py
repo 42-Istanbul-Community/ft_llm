@@ -8,9 +8,9 @@ from helpers import get_system_message
 
 
 class BaseLLM:
-    def __init__(self, client, config={}, **kwargs) -> None:
+    def __init__(self, client, config=None, **kwargs) -> None:
         self.openai = client
-        self.config = config if not config == {} else full_config
+        self.config = full_config if not config else config
 
     def chat_completion(self, messages=[], **kwargs):
         response_format = self.config.get(
@@ -34,7 +34,7 @@ class BaseLLM:
         else:
             if self.config.get("stream"):
                 reasoning_attr = "reasoning"
-                if os.environ["PROVIDER"] == "lmstudio":
+                if os.getenv("PROVIDER") == "lmstudio":
                     reasoning_attr = "reasoning_content"
                 response = ""
                 reasoning = ""
@@ -110,8 +110,13 @@ class LLMUtils:
     def rev(self, num=2):
         try:
             num = int(num)
-        except Exception as e:
-            print("rev: ", e)
+            if num < 0:
+                raise ValueError(
+                    "Number of messages to remove cannot be negative")
+        except (TypeError, ValueError) as e:
+            error_msg = f"rev: {e}"
+            print(error_msg)
+            return error_msg
         self.messages = self.messages[:-num]
         print(*[
             f"{msg['role']}: {msg['content'][:40]}\n"
@@ -132,7 +137,6 @@ class BasicLLM(BaseLLM, LLMUtils):
             args = re.findall(r'"(.*?)"', command)
             if args == []:
                 args = command.split(" ")[1:]
-            print(attr, args)
             try:
                 if hasattr(self, attr):
                     response = getattr(self, attr)(*args)
@@ -201,47 +205,38 @@ class BasicLLM(BaseLLM, LLMUtils):
                         11, 12, 13) else 'th'
         kwargs = {}
         now = datetime.datetime.now()
-        # kwargs["date_r"] = f"{
-        #     now.strftime('%B')} {
-        #         now.day}{
-        #             get_ordinal_suffix(int(now.day))}, {
-        #                 now.year} - {
-        #                     now.hour: 02d}: {
-        #                         (math.ceil(int(now.minute) / 15) * 15) % 60: 02d} - {
-        #                             now.strftime('%A')}"
+        # kwargs["date_r"] = (
+        #     f"{now.strftime('%B')} {now.day}"
+        #     f"{get_ordinal_suffix(int(now.day))}, {now.year} - "
+        #     f"{now.hour:02d}:"
+        #     f"{(math.ceil(int(now.minute) / 15) * 15) % 60:02d} - "
+        #     f"{now.strftime('%A')}"
+        # )
 
-        kwargs["date"] = f"{
-            now.strftime('%B')} {
-                now.day}{
-                    get_ordinal_suffix(int(now.day))}, {
-                        now.year}"
+        kwargs["date"] = (
+            f"{now.strftime('%B')} {now.day}"
+            f"{get_ordinal_suffix(int(now.day))}, {now.year}"
+        )
 
-        kwargs["date_t"] = f"{
-            now.strftime('%B')} {
-                now.day}{
-                    get_ordinal_suffix(int(now.day))}, {
-                        now.year} - {
-                            now.hour % 12: 02d} {
-                                'PM' if now.hour > 12 else 'AM'}, {
-                                    now.strftime('%A')}"
+        kwargs["date_t"] = (
+            f"{now.strftime('%B')} {now.day}"
+            f"{get_ordinal_suffix(int(now.day))}, {now.year} - "
+            f"{now.hour % 12:02d} {'PM' if now.hour > 12 else 'AM'}, "
+            f"{now.strftime('%A')}"
+        )
 
-        kwargs["date_p"] = f"{
-            now.strftime('%B')} {
-                now.day}{
-                    get_ordinal_suffix(int(now.day))}, {
-                        now.year} - {
-                            now.hour: 02d}: {
-                                now.minute: 02d}, {
-                                    now.strftime('%A')}"
+        kwargs["date_p"] = (
+            f"{now.strftime('%B')} {now.day}"
+            f"{get_ordinal_suffix(int(now.day))}, {now.year} - "
+            f"{now.hour:02d}:{now.minute:02d}, {now.strftime('%A')}"
+        )
 
-        kwargs["time"] = f"{
-            now.hour % 12: 02d} {
-                'PM' if now.hour > 12 else 'AM'}, {
-                    now.strftime('%A')}"
+        kwargs["time"] = (
+            f"{now.hour % 12:02d} {'PM' if now.hour > 12 else 'AM'}, "
+            f"{now.strftime('%A')}"
+        )
 
-        kwargs["time_p"] = f"{
-            now.hour: 02d}: {
-                now.minute: 02d}"
+        kwargs["time_p"] = f"{now.hour:02d}:{now.minute:02d}"
 
         self.config.update(kwargs)
         try:

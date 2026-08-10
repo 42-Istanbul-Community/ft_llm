@@ -2,7 +2,7 @@ try:
     import openai
 except ImportError as e:
     print("Dependency missing. Please run `make install`.")
-    print(e)
+    exit(str(e))
 
 import os
 from modules import BasicLLM
@@ -16,20 +16,20 @@ if os.environ["PROVIDER"] == "lmstudio":
     endpoint = LMSTUDIO_ENDPOINT
 
 
-def print_seperator() -> None:
+def print_separator() -> None:
     print()
-    print("=="*20)
+    print("==" * 20)
 
 
 if __name__ == "__main__":
     client = openai.OpenAI(base_url=endpoint, api_key=os.environ["OPENAI_API"])
     llm = BasicLLM(client)
     while True:
-        print_seperator()
+        print_separator()
 
         prompt = input("User> ")
 
-        print_seperator()
+        print_separator()
 
         if prompt.lower() == "exit":
             break

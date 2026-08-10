@@ -20,13 +20,15 @@ make run # creates virtual environment (.venv) and installs dependencies if nece
 
 ### Slash commands
 
-- `/ct <float>`: Sets temperature (0.0 / infinity)
-- `/ca <string>`: Sets AI (personas/)
-- `/cpp <float>`: Set presence_penalty (-2 / 2)
-- `/cfp <float>`: Set frequency_penalty (-2 / 2)
-- `/save <string>`: Saves the current conversation
-- `/load <string>`: Loads a previously saved conversation
-- `/rev <int>`: Reverts 'x' messages back
+ - `/ct <float>`    : Set temperature (0.0–3.0)
+ - `/ctp <float>`   : Set top_p (0.0–1.0)
+ - `/ca <persona>`  : Set persona (from `personas/`)
+ - `/cm <model>`    : Set model
+ - `/cpp <float>`   : Set presence_penalty (-2–2)
+ - `/cfp <float>`   : Set frequency_penalty (-2–2)
+ - `/save <name>`   : Save the current conversation
+ - `/load <name>`   : Load a previously saved conversation
+ - `/rev <int>`     : Revert the last N messages
 
 ## Contributing Guidelines 🤝  
 
