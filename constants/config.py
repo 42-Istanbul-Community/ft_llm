@@ -6,8 +6,8 @@ full_config = {
     "presence_penalty": 0.0,  # min -2, max 2
     "frequency_penalty": 0.0,  # min -2, max 2
     "stream": True,
-    "top_k": 40,
-    "min_p": 0.5
+    "top_k": 40,  # invalid for openai client
+    "min_p": 0.5  # invalid for openai client
 }
 
 LMSTUDIO_ENDPOINT = "http://127.0.0.1:1234/v1"

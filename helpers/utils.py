@@ -27,11 +27,9 @@ def load_env(file_path=".env"):
 def get_context(folder="", name=""):
     context = ""
     file_name = os.path.join(folder, name)
-    print(file_name)
     try:
         with open(file_name, "r", encoding="utf8") as f:
             context = f.read()
-        print(context)
     except Exception as e:
         print(f"get_context Error: {e}")
     finally:
