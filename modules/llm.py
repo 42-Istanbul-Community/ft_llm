@@ -89,7 +89,7 @@ class LLMUtils:
 
     def ca(self, model):
         self.config["name"] = model
-        print(f"Persona set to {self.config["name"]}")
+        print(f"Persona set to {self.config['name']}")
 
     def ct(self, value):
         self.config['temperature'] = float(value)
